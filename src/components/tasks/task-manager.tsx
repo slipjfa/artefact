@@ -18,7 +18,7 @@ import { useTRPC } from "@/trpc/client";
 
 type TaskPage = {
   items: Task[];
-  nextCursor: string | undefined;
+  nextCursor: number | undefined;
   total: number;
 };
 
@@ -409,10 +409,17 @@ export function TaskManager({ initialPage }: TaskManagerProps) {
                       </p>
                     )}
 
-                    <p className="mt-3 text-xs text-slate-400">
-                      Criada em {formatDate(task.dataCriacao)}
-                    </p>
-                  </div>
+                    <div className="mt-3 space-y-1 border-t border-slate-100 pt-2 text-xs text-slate-500">
+                      <p className="break-all">
+                        <span className="font-medium text-slate-600">ID:</span>{" "}
+                        <code>{task.id}</code>
+                      </p>
+                      <p>
+                        <span className="font-medium text-slate-600">Criada em:</span>{" "}
+                        {formatDate(task.dataCriacao)}
+                      </p>
+                    </div>
+                  </div>                  
 
                   <div className="flex shrink-0 gap-2">
                     <button
