@@ -22,6 +22,41 @@ function formatDate(timestamp: number) {
   }).format(new Date(timestamp));
 }
 
+const sampleTasks = [
+  {
+    titulo: "Revisar documentação do projeto",
+    
+  },
+  {
+    titulo: "Preparar apresentação",
+    descricao: "",
+  },
+  {
+    titulo: "Atualizar dependências",
+    descricao: undefined,
+  },
+  {
+    titulo: "Corrigir bugs pendentes",
+    descricao: "Revisar os problemas identificados durante os testes.",
+  },
+  {
+    titulo: "Escrever testes automatizados",
+    descricao: "Adicionar cobertura para as operações principais.",
+  },
+  {
+    titulo: "Revisar interface",
+    descricao: "Verificar responsividade e consistência visual.",
+  },
+  {
+    titulo: "Organizar arquivos do projeto",
+    descricao: "Revisar estrutura de pastas e remover arquivos desnecessários.",
+  },
+  {
+    titulo: "Preparar versão de entrega",
+    descricao: "Executar validações finais e revisar o README.",
+  },
+];
+
 export function TaskManager({ initialTasks }: TaskManagerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -57,6 +92,22 @@ export function TaskManager({ initialTasks }: TaskManagerProps) {
         resetForm();
         setError("");
         setFeedback("Tarefa criada com sucesso.");
+      },
+      onError: (mutationError) => {
+        setError(mutationError.message);
+        setFeedback("");
+      },
+    }),
+  );
+
+  const importMutation = useMutation(
+    trpc.task.createMany.mutationOptions({
+      onSuccess: async (createdTasks) => {
+        await refreshTasks();
+        setError("");
+        setFeedback(
+          `${createdTasks.length} tarefas de exemplo adicionadas com sucesso.`,
+        );
       },
       onError: (mutationError) => {
         setError(mutationError.message);
@@ -123,6 +174,11 @@ export function TaskManager({ initialTasks }: TaskManagerProps) {
     createMutation.mutate(taskInput);
   }
 
+  function handleImportSamples() {
+    setError("");
+    setFeedback("");
+    importMutation.mutate(sampleTasks);
+  }  
   function handleEdit(task: Task) {
     setEditingTask(task);
     setTitulo(task.titulo);
@@ -234,11 +290,24 @@ export function TaskManager({ initialTasks }: TaskManagerProps) {
       )}
 
       <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Tarefas</h2>
-          <span className="text-sm text-slate-500">
-            {tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"}
-          </span>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold">Tarefas</h2>
+            <span className="text-sm text-slate-500">
+              {tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleImportSamples}
+            disabled={importMutation.isPending || isSaving || deleteMutation.isPending}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {importMutation.isPending
+              ? "Importando..."
+              : "Carregar tarefas de exemplo"}
+          </button>
         </div>
 
         {tasks.length === 0 ? (

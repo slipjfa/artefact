@@ -16,6 +16,13 @@ export const createTaskSchema = z.object({
     .transform((value) => value || undefined),
 });
 
+
+export const createTasksSchema = z
+  .array(createTaskSchema)
+  .min(1)
+  .max(50);
+
+  
 export const updateTaskSchema = createTaskSchema.extend({
   id: taskIdSchema,
 });

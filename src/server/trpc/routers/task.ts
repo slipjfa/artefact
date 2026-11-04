@@ -4,6 +4,7 @@ import {
   createTaskSchema,
   taskIdSchema,
   updateTaskSchema,
+  createTasksSchema,
 } from "@/server/tasks/schemas";
 import { taskStore } from "@/server/tasks/store";
 import { createTRPCRouter, publicProcedure } from "../init";
@@ -17,6 +18,12 @@ export const taskRouter = createTRPCRouter({
     .input(createTaskSchema)
     .mutation(({ input }) => {
       return taskStore.create(input);
+    }),
+
+  createMany: publicProcedure
+    .input(createTasksSchema)
+    .mutation(({ input }) => {
+      return taskStore.createMany(input);
     }),
 
   update: publicProcedure

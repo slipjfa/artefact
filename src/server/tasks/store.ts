@@ -57,4 +57,8 @@ export const taskStore = {
   delete(id: string): boolean {
     return tasks.delete(id);
   },
+
+  createMany(inputs: CreateTaskInput[]): Task[] {
+    return inputs.map((input) => this.create(input));
+  },
 };
