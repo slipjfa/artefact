@@ -22,9 +22,16 @@ export const createTasksSchema = z
   .min(1)
   .max(50);
 
-  
+
 export const updateTaskSchema = createTaskSchema.extend({
   id: taskIdSchema,
+});
+
+export const listTasksSchema = z.object({
+  limit: z.number().int().min(1).max(50).default(5),
+  cursor: taskIdSchema.nullable().optional().transform(
+    (value) => value ?? undefined,
+  ),
 });
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;

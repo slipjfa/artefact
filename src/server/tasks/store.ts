@@ -11,9 +11,11 @@ export type Task = {
   dataCriacao: number;
 };
 
-// This Map is intentionally in-memory: persistence is outside the scope
-// of the assignment. Data is lost when the server process restarts.
-const tasks = new Map<string, Task>();
+const globalForTaskStore = globalThis as typeof globalThis & {
+  taskStore?: Map<string, Task>;
+};
+
+const tasks = (globalForTaskStore.taskStore ??= new Map<string, Task>()); 
 
 export const taskStore = {
   list(): Task[] {
@@ -60,5 +62,31 @@ export const taskStore = {
 
   createMany(inputs: CreateTaskInput[]): Task[] {
     return inputs.map((input) => this.create(input));
+  },
+
+  listPage(limit: number, cursor?: string) {
+    const allTasks = Array.from(tasks.values());
+
+    const cursorIndex = cursor
+      ? allTasks.findIndex((task) => task.id === cursor)
+      : -1;
+
+    if (cursor && cursorIndex === -1) {
+      return {
+        items: [],
+        nextCursor: undefined,
+        total: allTasks.length,
+      };
+    }
+
+    const startIndex = cursorIndex + 1;
+    const items = allTasks.slice(startIndex, startIndex + limit);
+    const hasMore = startIndex + limit < allTasks.length;
+
+    return {
+      items,
+      nextCursor: hasMore ? items[items.length - 1]?.id : undefined,
+      total: allTasks.length,
+    };
   },
 };

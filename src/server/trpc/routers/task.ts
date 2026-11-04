@@ -5,6 +5,7 @@ import {
   taskIdSchema,
   updateTaskSchema,
   createTasksSchema,
+  listTasksSchema,
 } from "@/server/tasks/schemas";
 import { taskStore } from "@/server/tasks/store";
 import { createTRPCRouter, publicProcedure } from "../init";
@@ -13,6 +14,12 @@ export const taskRouter = createTRPCRouter({
   list: publicProcedure.query(() => {
     return taskStore.list();
   }),
+
+  listInfinite: publicProcedure
+    .input(listTasksSchema)
+    .query(({ input }) => {
+      return taskStore.listPage(input.limit, input.cursor);
+    }),
 
   create: publicProcedure
     .input(createTaskSchema)

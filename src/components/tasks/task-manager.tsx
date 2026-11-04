@@ -1,18 +1,32 @@
 "use client";
 
-import { useState, type SyntheticEvent } from "react";
 import {
+  useInfiniteQuery,
   useMutation,
-  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+
+import {
+  useEffect,
+  useRef,
+  useState,
+  type SyntheticEvent,
+} from "react";
 
 import type { Task } from "@/server/tasks/store";
 import { useTRPC } from "@/trpc/client";
 
-type TaskManagerProps = {
-  initialTasks: Task[];
+type TaskPage = {
+  items: Task[];
+  nextCursor: string | undefined;
+  total: number;
 };
+
+type TaskManagerProps = {
+  initialPage: TaskPage;
+};
+
+const PAGE_SIZE = 5;
 
 function formatDate(timestamp: number) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -57,7 +71,7 @@ const sampleTasks = [
   },
 ];
 
-export function TaskManager({ initialTasks }: TaskManagerProps) {
+export function TaskManager({ initialPage }: TaskManagerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
@@ -66,16 +80,39 @@ export function TaskManager({ initialTasks }: TaskManagerProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
+  const formRef = useRef<HTMLElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: tasks = initialTasks } = useQuery(
-    trpc.task.list.queryOptions(undefined, {
-      initialData: initialTasks,
-    }),
+  const {
+    data, 
+    error: queryError,
+    isError: isQueryError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery(
+    trpc.task.listInfinite.infiniteQueryOptions(
+      { limit: PAGE_SIZE },
+      {
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+        initialData: {
+          pages: [initialPage],
+          pageParams: [null],
+        },
+        staleTime: 30_000,
+      },
+    ),
   );
+
+  const tasks = data.pages.flatMap((page) => page.items);
+
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   async function refreshTasks() {
     await queryClient.invalidateQueries(
-      trpc.task.list.queryFilter(),
+      trpc.task.listInfinite.infiniteQueryFilter({
+        limit: PAGE_SIZE,
+      }),
     );
   }
 
@@ -185,6 +222,13 @@ export function TaskManager({ initialTasks }: TaskManagerProps) {
     setDescricao(task.descricao ?? "");
     setError("");
     setFeedback("");
+
+    formRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+
+    titleInputRef.current?.focus({ preventScroll: true });
   }
 
   function handleCancelEdit() {
@@ -199,9 +243,35 @@ export function TaskManager({ initialTasks }: TaskManagerProps) {
     deleteMutation.mutate(id);
   }
 
+  useEffect(() => {
+    const element = loadMoreRef.current;
+
+    if (!element || !hasNextPage) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          void fetchNextPage();
+        }
+      },
+      {
+        rootMargin: "150px",
+      },
+    );
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage]);
+
   return (
     <div className="space-y-8">
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section
+        ref={formRef}
+        className="scroll-mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+      >
         <h2 className="mb-5 text-xl font-semibold">
           {editingTask ? "Editar tarefa" : "Nova tarefa"}
         </h2>
@@ -215,6 +285,7 @@ export function TaskManager({ initialTasks }: TaskManagerProps) {
               Título
             </label>
             <input
+              ref={titleInputRef}
               id="titulo"
               type="text"
               value={titulo}
@@ -294,7 +365,7 @@ export function TaskManager({ initialTasks }: TaskManagerProps) {
           <div>
             <h2 className="text-xl font-semibold">Tarefas</h2>
             <span className="text-sm text-slate-500">
-              {tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"}
+              {tasks.length} de {data.pages[0].total} tarefas carregadas
             </span>
           </div>
 
@@ -369,6 +440,35 @@ export function TaskManager({ initialTasks }: TaskManagerProps) {
               </li>
             ))}
           </ul>
+        )}
+        {isQueryError && (
+          <p role="alert" className="mt-4 text-sm text-red-700">
+            Erro ao carregar tarefas: {queryError.message}
+          </p>
+        )}
+
+        {hasNextPage && (
+          <div
+            ref={loadMoreRef}
+            className="mt-6 flex justify-center"
+          >
+            <button
+              type="button"
+              onClick={() => void fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isFetchingNextPage
+                ? "Carregando..."
+                : "Carregar mais"}
+            </button>
+          </div>
+        )}
+
+        {!hasNextPage && tasks.length > 0 && (
+          <p className="mt-6 text-center text-sm text-slate-400">
+            Todas as tarefas foram carregadas.
+          </p>
         )}
       </section>
     </div>

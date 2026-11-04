@@ -1,12 +1,15 @@
 import { TaskManager } from "@/components/tasks/task-manager";
 import { appRouter } from "@/server/trpc/routers/_app";
 
-// The task store is in memory, so read it on every request.
 export const dynamic = "force-dynamic";
+
+const PAGE_SIZE = 5;
 
 export default async function Home() {
   const caller = appRouter.createCaller({});
-  const tasks = await caller.task.list();
+  const initialPage = await caller.task.listInfinite({
+    limit: PAGE_SIZE,
+  });
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900">
@@ -20,7 +23,7 @@ export default async function Home() {
           </p>
         </header>
 
-        <TaskManager initialTasks={tasks} />
+        <TaskManager initialPage={initialPage} />
       </div>
     </main>
   );
