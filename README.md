@@ -1,82 +1,83 @@
-# Gerenciador de Tarefas
+# Task Manager
 
-Aplicação web para gerenciamento de tarefas, desenvolvida como solução para um desafio técnico.
+A web application for task management, developed as a solution to a technical challenge.
 
-## Funcionalidades
+## Features
 
-- Listagem de tarefas com carregamento inicial no servidor.
-- Criação, edição e exclusão de tarefas.
-- Validação de campos e mensagens de feedback para operações bem-sucedidas ou com erro.
-- Importação de tarefas de exemplo para facilitar a demonstração.
-- Paginação infinita durante a rolagem da lista.
+- Task listing with initial data loaded on the server.
+- Task creation, editing, and deletion.
+- Input validation and feedback for successful and failed operations.
+- Sample task import to facilitate demonstration.
+- Infinite scrolling with cursor-based pagination.
+- Bilingual interface supporting English and Portuguese, with English as the default language.
 
-Cada tarefa possui um identificador único gerado automaticamente, título obrigatório, descrição opcional e data de criação.
+Each task has an automatically generated unique identifier, a required title, an optional description, and a creation timestamp.
 
-## Tecnologias
+## Technologies
 
-- **Next.js 15** — framework React com App Router e renderização no servidor.
-- **React** — construção da interface com componentes e hooks.
-- **TypeScript** — tipagem estática.
-- **tRPC** — comunicação tipada entre a interface e as operações do servidor.
-- **TanStack React Query** — gerenciamento de requisições, mutações e paginação infinita.
-- **Zod** — validação dos dados de entrada.
-- **Tailwind CSS** — estilização da interface.
+- **Next.js 15** — React framework using the App Router and server-side rendering.
+- **React** — UI development with functional components and hooks.
+- **TypeScript** — static typing.
+- **tRPC** — type-safe communication between the frontend and backend.
+- **TanStack React Query** — query management, mutations, and infinite pagination.
+- **Zod** — runtime validation of input data.
+- **Tailwind CSS** — UI styling.
 
-## Requisitos
+## Requirements
 
-- Node.js 20.9 ou superior.
+- Node.js 20.9 or later.
 - pnpm.
 
-## Como executar
+## Getting Started
 
-Clone o repositório e acesse o diretório do projeto:
+Clone the repository and navigate to the project directory:
 
 ```bash
 git clone https://github.com/slipjfa/artefact.git
 cd artefact
 ```
 
-Instale as dependências:
+Install dependencies:
 
 ```bash
 pnpm install
 ```
 
-Inicie o servidor de desenvolvimento:
+Start the development server:
 
 ```bash
 pnpm dev
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000) no navegador.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Arquitetura
+## Architecture
 
-A aplicação utiliza o App Router do Next.js. A página inicial carrega a primeira página de tarefas diretamente pelo servidor, evitando uma requisição HTTP adicional para obter os dados iniciais.
+The application uses the Next.js App Router. The initial task page is loaded directly on the server, avoiding an additional HTTP request to retrieve the initial data.
 
-As operações realizadas pela interface são enviadas por meio do tRPC. Os procedimentos validam os dados de entrada com Zod e delegam as operações ao armazenamento em memória.
+Frontend operations are handled through tRPC. Procedures validate input data with Zod and delegate operations to the in-memory store.
 
-Principais diretórios:
+The main project directories are organized as follows:
 
 ```text
 src/
-├── app/                  # Página inicial, layout e endpoint do tRPC
-├── components/tasks/     # Interface e gerenciamento de tarefas
+├── app/                  # Home page, layout, and tRPC endpoint
+├── components/tasks/     # Task management interface
 ├── server/
-│   ├── tasks/            # Validação e armazenamento das tarefas
-│   └── trpc/             # Inicialização e procedimentos do tRPC
-└── trpc/                 # Cliente e provedores do frontend
+│   ├── tasks/            # Task validation and in-memory storage
+│   └── trpc/             # tRPC initialization and procedures
+└── trpc/                 # Frontend client and providers
 ```
 
-## Armazenamento
+## Data Storage
 
-Os dados são mantidos em memória no processo do servidor, conforme solicitado no desafio. Não é necessário configurar banco de dados ou variáveis de ambiente.
+Task data is stored in memory within the server process, as required by the challenge. No database configuration or environment variables are needed.
 
-**Importante:** as tarefas são perdidas quando o processo do servidor é reiniciado. Como o armazenamento não é compartilhado entre processos ou instâncias independentes, a aplicação não oferece persistência em produção.
+**Important:** All tasks are lost when the server process restarts. Data is not shared between independent processes or instances, so this implementation does not provide reliable persistence.
 
-## Validação
+## Validation
 
-Para verificar os tipos, executar o lint e validar a compilação de produção:
+To check types, run the linter, and verify the production build:
 
 ```bash
 pnpm exec tsc --noEmit

@@ -42,7 +42,7 @@ export const taskRouter = createTRPCRouter({
       if (!task) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Tarefa não encontrada.",
+          message: "TASK_NOT_FOUND",
         });
       }
 
@@ -59,7 +59,7 @@ export const taskRouter = createTRPCRouter({
       if (!deleted) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Tarefa não encontrada.",
+          message: "TASK_NOT_FOUND",
         });
       }
 
