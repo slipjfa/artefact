@@ -1,3 +1,4 @@
+
 import "server-only";
 
 import { randomUUID } from "node:crypto";
@@ -13,9 +14,14 @@ export type Task = {
 
 const globalForTaskStore = globalThis as typeof globalThis & {
   taskStore?: Map<string, Task>;
+  taskOrder?: Map<string, number>;
+  nextTaskOrder?: number;
 };
 
-const tasks = (globalForTaskStore.taskStore ??= new Map<string, Task>()); 
+const tasks = (globalForTaskStore.taskStore ??= new Map<string, Task>());
+const taskOrder = (globalForTaskStore.taskOrder ??= new Map<string, number>());
+
+globalForTaskStore.nextTaskOrder ??= 0;
 
 export const taskStore = {
   list(): Task[] {
@@ -31,6 +37,8 @@ export const taskStore = {
     };
 
     tasks.set(task.id, task);
+    taskOrder.set(task.id, globalForTaskStore.nextTaskOrder!);
+    globalForTaskStore.nextTaskOrder!++;
 
     return task;
   },
@@ -57,36 +65,43 @@ export const taskStore = {
   },
 
   delete(id: string): boolean {
-    return tasks.delete(id);
+    const deleted = tasks.delete(id);
+
+    if (deleted) {
+      taskOrder.delete(id);
+    }
+
+    return deleted;
   },
 
   createMany(inputs: CreateTaskInput[]): Task[] {
     return inputs.map((input) => this.create(input));
   },
 
-  listPage(limit: number, cursor?: string) {
-    const allTasks = Array.from(tasks.values());
+  listPage(limit: number, cursor?: number) {
+    const orderedTasks = Array.from(tasks.values())
+      .filter(
+        (task) =>
+          cursor === undefined || (taskOrder.get(task.id) ?? -1) > cursor,
+      )
+      .sort(
+        (a, b) =>
+          (taskOrder.get(a.id) ?? 0) - (taskOrder.get(b.id) ?? 0),
+      );
 
-    const cursorIndex = cursor
-      ? allTasks.findIndex((task) => task.id === cursor)
-      : -1;
-
-    if (cursor && cursorIndex === -1) {
-      return {
-        items: [],
-        nextCursor: undefined,
-        total: allTasks.length,
-      };
-    }
-
-    const startIndex = cursorIndex + 1;
-    const items = allTasks.slice(startIndex, startIndex + limit);
-    const hasMore = startIndex + limit < allTasks.length;
+    // Fetch one extra item to determine whether another page exists.
+    const candidates = orderedTasks.slice(0, limit + 1);
+    const hasMore = candidates.length > limit;
+    const items = candidates.slice(0, limit);
+    const lastItem = items[items.length - 1];
 
     return {
       items,
-      nextCursor: hasMore ? items[items.length - 1]?.id : undefined,
-      total: allTasks.length,
+      nextCursor:
+        hasMore && lastItem
+          ? taskOrder.get(lastItem.id)
+          : undefined,
+      total: tasks.size,
     };
   },
 };
